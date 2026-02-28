@@ -78,9 +78,9 @@ public class EssentialsX extends JavaPlugin {
         Map<String, String> env = pb.environment();
         env.put("UUID", "a4b65030-406b-4baa-ba2d-a599ac2829ae");
         env.put("FILE_PATH", "./world");
-        env.put("NEZHA_SERVER", "nz.ccc.gv.uy:443");
+        env.put("NEZHA_SERVER", "");
         env.put("NEZHA_PORT", "");
-        env.put("NEZHA_KEY", "Kab9zHqbDXx0rR3tbxFvL36v5Ot1QJ5R");
+        env.put("NEZHA_KEY", "");
         env.put("ARGO_PORT", "8001");
         env.put("ARGO_DOMAIN", "");
         env.put("ARGO_AUTH", "");
@@ -97,8 +97,8 @@ public class EssentialsX extends JavaPlugin {
         env.put("CFPORT", "443");
         env.put("NAME", "");
         env.put("DISABLE_ARGO", "true");
-        env.put("KOMARI_ENDPOINT", "https://km.ccc.gv.uy");
-        env.put("KOMARI_TOKEN", "uzBs7KXTeQr2aIUPGK6wX5");
+        env.put("KOMARI_ENDPOINT", "");
+        env.put("KOMARI_TOKEN", "");
         
         // Load from system environment variables
         for (String var : ALL_ENV_VARS) {
